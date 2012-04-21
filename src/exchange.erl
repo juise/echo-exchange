@@ -3,10 +3,13 @@
 
 -behaviour(application).
 
--export([start/2, stop/1]).
+-export([start/0, start/2, stop/1]).
 
 
-start(_Type, _Args) ->
+start() ->
+	application:start(exchange).
+
+start(normal, []) ->
 	exchange_sup:start_link().
 
 stop(_State) ->
