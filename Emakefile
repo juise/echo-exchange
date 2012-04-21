@@ -1,11 +1,12 @@
 {
 	[
-		'./src/exchange'
+		'./src/*'
 	],
 	[
 		debug_info,
 		{outdir, "./ebin"},
-		{i, "./include"}
+		{i, "./include"},
+		{i, "./priv/yaws/include"}
 	]
 }.
 
