@@ -1,4 +1,5 @@
 echo-exchange
 =============
 
- echo-exchange
+ Simple echo-exchange server
+
