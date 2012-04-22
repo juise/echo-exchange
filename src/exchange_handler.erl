@@ -8,6 +8,7 @@
 
 
 out(Arg) ->
+	io:format("~p~n", [self()]),
 	Request = Arg#arg.req,
 	Method = Request#http_request.method,
 	{_, Path} = Request#http_request.path,
