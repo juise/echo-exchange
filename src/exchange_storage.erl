@@ -92,59 +92,90 @@ add(Name, Time, Price, Value) ->
 	Paper = #paper{name=Name, time=Time, price=Price, value=Value},
 	ets:insert(paper, Paper).
 
+%% Select all records
 select_all() ->
 	ets:select(paper, ets:fun2ms(fun(Paper) -> Paper end)).
 
+%% Select all records and Scale
 select_all(Scale) ->
-	Papers = ets:select(paper, ets:fun2ms(fun(Paper) -> Paper end)),
+	Papers = select_all(),
 	scale(Papers, Scale).
 
-select_by_price(Price, Scale) ->
-	Papers = ets:select(paper, ets:fun2ms(fun(Paper = #paper{price=P}) when P =:= Price -> Paper end)),
+%% Select all by given Name
+select_by_name(Name) ->
+	ets:select(paper, ets:fun2ms(fun(Paper = #paper{name=N}) when N =:= Name -> Paper end)).
+
+%% Select all by given Name and Scale
+select_by_name(Name, Scale) ->
+	Papers = select_by_name(Name),
 	scale(Papers, Scale).
 
+%% Select all by given date time T1,T2 range
+select_by_time(T1, T2) ->
+	ets:select(paper, ets:fun2ms(fun(Paper = #paper{time=T}) when T1 =< T andalso T =< T2 -> Paper end)).
+
+%% Select all by given date time T1,T2 range and Scale
 select_by_time(T1, T2, Scale) ->
-	Papers = ets:select(paper, ets:fun2ms(fun(Paper = #paper{time=T}) when T1 =< T andalso T =< T2 -> Paper end)),
+	Papers = select_by_name(T1, T2),
 	scale(Papers, Scale).
 
-select_by_value(Value, Scale) ->
-	Papers = ets:select(paper, ets:fun2ms(fun(Paper = #paper{value=V}) when V =:= Value -> Paper end)),
+%% Select all by given Name, date time T1,T2 range
+select_by_name_time(Name, T1, T2) ->
+	ets:select(paper, ets:fun2ms(fun(Paper = #paper{name=N, time=T}) when N =:= Name andalso T1 =< T andalso T =< T2 -> Paper end)).
+
+%% Select all by given Name, date time T1,T2 range and Scale
+select_by_name_time(Name, T1, T2, Scale) ->
+	Papers = select_by_name_time(Name, T1, T2),
 	scale(Papers, Scale).
 
-select_by_value(Value, ">", Scale) ->
-	Papers = ets:select(paper, ets:fun2ms(fun(Paper = #paper{value=V}) when V > Value -> Paper end)),
-	scale(Papers, Scale);
 
-select_by_value(Value, "<", Scale) ->
-	Papers = ets:select(paper, ets:fun2ms(fun(Paper = #paper{value=V}) when V < Value -> Paper end)),
-	scale(Papers, Scale);
+handle_call(all, _From, State) ->
+	Reply = select_all(),
+	{reply, Reply, State}.
 
-select_by_value(Value, "=<", Scale) ->
-	Papers = ets:select(paper, ets:fun2ms(fun(Paper = #paper{value=V}) when V =< Value -> Paper end)),
-	scale(Papers, Scale);
+handle_call({all, Scale}, _From, State) ->
+	Reply = select_all(Scale),
+	{reply, Reply, State}.
 
-select_by_value(Value, ">=", Scale) ->
-	Papers = ets:select(paper, ets:fun2ms(fun(Paper = #paper{value=V}) when V >= Value -> Paper end)),
-	scale(Papers, Scale).
+handle_call({name, Name}, _From, State) ->
+	Reply = select_by_name(Name),
+	{reply, Reply, State}.
+
+handle_call({name, Name, Scale}, _From, State) ->
+	Reply = select_by_name(Name, Scale),
+	{reply, Reply, State}.
+
+handle_call({time, Time1, Time2}, _From, State) ->
+	Reply = select_by_time(Time1, Time2),
+	{reply, Reply, State}.
+
+handle_call({time, Time1, Time2, Scale}, _From, State) ->
+	Reply = select_by_time(Time1, Time2, Scale),
+	{reply, Reply, State}.
+
+handle_call({name, time, Name, Time1, Time2}, _From, State) ->
+	Reply = select_by_name_time(Name, Time1, Time2),
+	{reply, Reply, State}.
+
+handle_call({name, time, Name, Time1, Time2, Scale}, _From, State) ->
+	Reply = select_by_name_time(Name, Time1, Time2, Scale),
+	{reply, Reply, State}.
 
 handle_cast(_Msg, State) ->
 	{noreply, State}.
 
-handle_call(Msg, _From, State) ->
-	Reply = select_all(Msg),
-	{reply, Reply, State}.
-
 handle_info(init_storage, State) ->
 	Papers = [
-			#paper{name="YNDX", time=calendar:local_time(), price=10, value=20},
-			#paper{name="GOOG", time={{2012,3,20},{15,0,0}}, price=20, value=30},
-			#paper{name="YNDX", time={{2012,4,20},{15,30,59}}, price=16, value=510},
-			#paper{name="GOOG", time=calendar:local_time(), price=200, value=540},
-			#paper{name="YNDX", time=calendar:local_time(), price=50, value=20},
-			#paper{name="YNDX", time=calendar:local_time(), price=20, value=400},
-			#paper{name="YNDX", time={{2012,4,20},{12,9,59}}, price=40, value=10},
-			#paper{name="GOOG", time=calendar:local_time(), price=60, value=50},
-			#paper{name="GOOG", time={{2012,4,21},{12,9,59}}, price=340, value=500}],
+		#paper{name="YNDX", time=calendar:local_time(), price=10, value=20},
+		#paper{name="GOOG", time={{2012,3,20},{15,0,0}}, price=20, value=30},
+		#paper{name="YNDX", time={{2012,4,20},{15,30,59}}, price=16, value=510},
+		#paper{name="GOOG", time=calendar:local_time(), price=200, value=540},
+		#paper{name="YNDX", time=calendar:local_time(), price=50, value=20},
+		#paper{name="YNDX", time=calendar:local_time(), price=20, value=400},
+		#paper{name="YNDX", time={{2012,4,20},{12,9,59}}, price=40, value=10},
+		#paper{name="GOOG", time=calendar:local_time(), price=60, value=50},
+		#paper{name="GOOG", time={{2012,4,21},{12,9,59}}, price=340, value=500}
+	],
 	ets:new(paper, [bag, {keypos, #paper.name}, named_table]),
 	ets:insert(paper, Papers),
 	{noreply, State}.
