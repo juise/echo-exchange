@@ -5,7 +5,7 @@
 
 -behaviour(gen_server).
 
--export([start_link/0, add/0, add/4, select_all/0, select_all/1, select_by_price/2, select_by_time/3, select_by_value/2, select_by_value/3]).
+-export([start_link/0, add/0, add/4]).
 -export([init/1, handle_cast/2, handle_call/3, handle_info/2, code_change/3, terminate/2]).
 
 -record(paper, {name, time, price, value}).
@@ -92,11 +92,11 @@ add(Name, Time, Price, Value) ->
 	Paper = #paper{name=Name, time=Time, price=Price, value=Value},
 	ets:insert(paper, Paper).
 
-%% Select all records
+%% Select all
 select_all() ->
 	ets:select(paper, ets:fun2ms(fun(Paper) -> Paper end)).
 
-%% Select all records and Scale
+%% Select all and Scale
 select_all(Scale) ->
 	Papers = select_all(),
 	scale(Papers, Scale).
@@ -131,31 +131,31 @@ select_by_name_time(Name, T1, T2, Scale) ->
 
 handle_call(all, _From, State) ->
 	Reply = select_all(),
-	{reply, Reply, State}.
+	{reply, Reply, State};
 
 handle_call({all, Scale}, _From, State) ->
 	Reply = select_all(Scale),
-	{reply, Reply, State}.
+	{reply, Reply, State};
 
 handle_call({name, Name}, _From, State) ->
 	Reply = select_by_name(Name),
-	{reply, Reply, State}.
+	{reply, Reply, State};
 
 handle_call({name, Name, Scale}, _From, State) ->
 	Reply = select_by_name(Name, Scale),
-	{reply, Reply, State}.
+	{reply, Reply, State};
 
 handle_call({time, Time1, Time2}, _From, State) ->
 	Reply = select_by_time(Time1, Time2),
-	{reply, Reply, State}.
+	{reply, Reply, State};
 
 handle_call({time, Time1, Time2, Scale}, _From, State) ->
 	Reply = select_by_time(Time1, Time2, Scale),
-	{reply, Reply, State}.
+	{reply, Reply, State};
 
 handle_call({name, time, Name, Time1, Time2}, _From, State) ->
 	Reply = select_by_name_time(Name, Time1, Time2),
-	{reply, Reply, State}.
+	{reply, Reply, State};
 
 handle_call({name, time, Name, Time1, Time2, Scale}, _From, State) ->
 	Reply = select_by_name_time(Name, Time1, Time2, Scale),

@@ -14,11 +14,11 @@ init([]) ->
 	init({one_for_one, 60, 120});
 
 init({RestartStrategy, MaxRestart, MaxTime}) ->
-	io:format("Try to start exchange_server.~n"),
-	Exchange = {exchange_server, {exchange_server, start_link, []}, permanent, 1000, worker, [exchange_server]},
+	ExchangeServer = {exchange_server, {exchange_server, start_link, []}, permanent, 1000, worker, [exchange_server]},
+	ExchangeStrorage = {exchange_storage, {exchange_storage, start_link, []}, permanent, 1000, worker, [exchange_storage]},
 	{ok, {
 			{RestartStrategy, MaxRestart, MaxTime},
-			[Exchange]
+			[ExchangeServer, ExchangeStrorage]
 		}
 	}.
 
