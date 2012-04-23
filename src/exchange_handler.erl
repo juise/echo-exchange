@@ -16,7 +16,6 @@
 
 -define(is_scale(S), (S =:= "minute" orelse S =:= "hour" orelse S =:= "day" orelse S =:= "week" orelse S =:= "month")).
 -define(is_time(T), (T =/= {error,bad_date})).
--define(istime(T), (dh_date:parse(T) =/= {error,bad_date})).
 
 
 %% Transform record Paper to proplist
@@ -83,27 +82,11 @@ handle_request('GET', [T1, T2, Scale], _Arg) when ?is_scale(Scale) ->
 
 %% Select all by given Name, date time T1,T2, url - /api/v1/T1/T2
 handle_request('GET', [Name, T1, T2], _Arg) ->
-	Time1 = dh_date:parse(T1),
-	Time2 = dh_date:parse(T2),
-	if
-		Time1 =/= {error,bad_date}, Time2 =/= {error,bad_date} ->
-			Reply = gen_server:call(exchange_storage, {name, time, Name, Time1, Time2}),
-			handle_response(Reply);
-		true ->
-			handle_response(?BAD_REQUEST)
-	end;
+	handle_request_name_time([Name, dt(T1), dt(T2)]);
 
 %% Select all by given Name, date time T1,T2 and Scale, url - /api/v1/Name/Scale, Scale = minute | hour | day | week | month
 handle_request('GET', [Name, T1, T2, Scale], _Arg) when ?is_scale(Scale) ->
-	Time1 = dh_date:parse(T1),
-	Time2 = dh_date:parse(T2),
-	if
-		Time1 =/= {error,bad_date}, Time2 =/= {error,bad_date} ->
-			Reply = gen_server:call(exchange_storage, {name, time, Name, Time1, Time2, list_to_atom(Scale)}),
-			handle_response(Reply);
-		true ->
-			handle_response(?BAD_REQUEST)
-	end;
+	handle_request_name_time([Name, dt(T1), dt(T2), Scale]);
 
 handle_request(_Method, _Request, _Arg) ->
 	{status, 404}.
@@ -120,7 +103,16 @@ handle_request_time([T1, T2, Scale]) when ?is_time(T1), ?is_time(T2) ->
 handle_request_time(_) ->
 	handle_response(?BAD_REQUEST).
 
+handle_request_name_time([Name, T1, T2]) when ?is_time(T1), ?is_time(T2) ->
+	Reply = gen_server:call(exchange_storage, {name, time, Name, T1, T2}),
+	handle_response(Reply);
 
+handle_request_name_time([Name, T1, T2, Scale]) when ?is_time(T1), ?is_time(T2) ->
+	Reply = gen_server:call(exchange_storage, {name, time, Name, T1, T2, Scale}),
+	handle_response(Reply);
+
+handle_request_name_time(_) ->
+	handle_response(?BAD_REQUEST).
 
 
 handle_response(?BAD_REQUEST) ->
