@@ -97,7 +97,7 @@ handle_request_time([T1, T2]) when ?is_time(T1), ?is_time(T2) ->
 	handle_response(Reply);
 
 handle_request_time([T1, T2, Scale]) when ?is_time(T1), ?is_time(T2) ->
-	Reply = gen_server:call(exchange_storage, {time, T1, T2, Scale}),
+	Reply = gen_server:call(exchange_storage, {time, T1, T2, list_to_atom(Scale)}),
 	handle_response(Reply);
 
 handle_request_time(_) ->
@@ -108,7 +108,7 @@ handle_request_name_time([Name, T1, T2]) when ?is_time(T1), ?is_time(T2) ->
 	handle_response(Reply);
 
 handle_request_name_time([Name, T1, T2, Scale]) when ?is_time(T1), ?is_time(T2) ->
-	Reply = gen_server:call(exchange_storage, {name, time, Name, T1, T2, Scale}),
+	Reply = gen_server:call(exchange_storage, {name, time, Name, T1, T2, list_to_atom(Scale)}),
 	handle_response(Reply);
 
 handle_request_name_time(_) ->

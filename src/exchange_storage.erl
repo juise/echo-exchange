@@ -116,7 +116,7 @@ select_by_time(T1, T2) ->
 
 %% Select all by given date time T1,T2 range and Scale
 select_by_time(T1, T2, Scale) ->
-	Papers = select_by_name(T1, T2),
+	Papers = select_by_time(T1, T2),
 	scale(Papers, Scale).
 
 %% Select all by given Name, date time T1,T2 range
