@@ -9,6 +9,7 @@
 -record(paper, {name, time, price, value}).
 -record(multifor, {name, time, open_price, close_price, min_price, max_price, value}).
 
+-define(CREATED, 201).
 -define(BAD_REQUEST, 400).
 -define(NOT_FOUND, 404).
 
@@ -88,8 +89,24 @@ handle_request('GET', [Name, T1, T2], _Arg) ->
 handle_request('GET', [Name, T1, T2, Scale], _Arg) when ?is_scale(Scale) ->
 	handle_request_name_time([Name, dt(T1), dt(T2), Scale]);
 
+handle_request('POST', ["add"], Arg) ->
+	try
+		{ok, Name} = yaws_api:postvar(Arg, "name"),
+		{ok, Time} = yaws_api:postvar(Arg, "time"),
+		{ok, Price} = yaws_api:postvar(Arg, "price"),
+		{ok, Value} = yaws_api:postvar(Arg, "value"),
+
+		N = string:to_upper(string:sub_string(Name, 1, 4)),
+		P = list_to_integer(Price),
+		V = list_to_integer(Value),
+
+		handle_request_post(N, dt(Time), P, V)
+	catch
+		_ -> handle_response(?BAD_REQUEST)
+	end;
+
 handle_request(_Method, _Request, _Arg) ->
-	{status, 404}.
+	{status, ?NOT_FOUND}.
 
 
 handle_request_time([T1, T2]) when ?is_time(T1), ?is_time(T2) ->
@@ -114,6 +131,16 @@ handle_request_name_time([Name, T1, T2, Scale]) when ?is_time(T1), ?is_time(T2) 
 handle_request_name_time(_) ->
 	handle_response(?BAD_REQUEST).
 
+handle_request_post(Name, Time, Price, Value) when ?is_time(Time) ->
+	ok = gen_server:call(exchange_storage, {add, Name, Time, Price, Value}),
+	handle_response(?CREATED);
+
+handle_request_post(_Name, _Time, _Price, _Value) ->
+	handle_response(?BAD_REQUEST).
+
+
+handle_response(?CREATED) ->
+	{status, ?CREATED};
 
 handle_response(?BAD_REQUEST) ->
 	{status, ?BAD_REQUEST};

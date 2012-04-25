@@ -159,7 +159,12 @@ handle_call({name, time, Name, Time1, Time2}, _From, State) ->
 
 handle_call({name, time, Name, Time1, Time2, Scale}, _From, State) ->
 	Reply = select_by_name_time(Name, Time1, Time2, Scale),
-	{reply, Reply, State}.
+	{reply, Reply, State};
+
+handle_call({add, Name, Time, Price, Value}, _From, State) ->
+	ets:insert(paper, #paper{name=Name, time=Time, price=Price, value=Value}),
+	{reply, ok, State}.
+
 
 handle_cast(_Msg, State) ->
 	{noreply, State}.
