@@ -24,10 +24,9 @@ handle_call(_Msg, _From, State) ->
 
 handle_info(init_yaws, State) ->
 	Id = "embedded",
-	Tmpdir = "/tmp",
-	Gconf = [{id, Id}, {logdir, Tmpdir}],
-	Sconf = [{port, 8888}, {servername, "localhost"}, {listen, {0,0,0,0}}, {docroot, Tmpdir}, {appmods, [{"/", exchange_handler}]}],
-	{ok, SC, GC, ChildSpecs} = yaws_api:embedded_start_conf(Tmpdir, Sconf, Gconf, Id),
+	Gconf = [{id, Id}, {logdir, "/tmp"}],
+	Sconf = [{port, 8888}, {servername, "localhost"}, {listen, {0,0,0,0}}, {docroot, "/tmp"}, {appmods, [{"/", exchange_handler}]}],
+	{ok, SC, GC, ChildSpecs} = yaws_api:embedded_start_conf("/tmp", Sconf, Gconf, Id),
 	[supervisor:start_child(exchange_sup, Ch) || Ch <- ChildSpecs],
 	yaws_api:setconf(GC, SC),
 	{noreply, State}.
