@@ -162,7 +162,7 @@ handle_call({name, time, Name, Time1, Time2, Scale}, _From, State) ->
 	{reply, Reply, State};
 
 handle_call({add, Name, Time, Price, Value}, _From, State) ->
-	ets:insert(paper, #paper{name=Name, time=Time, price=Price, value=Value}),
+	true = ets:insert(paper, #paper{name=Name, time=Time, price=Price, value=Value}),
 	{reply, ok, State}.
 
 

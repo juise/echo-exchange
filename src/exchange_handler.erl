@@ -9,6 +9,7 @@
 -record(paper, {name, time, price, value}).
 -record(multifor, {name, time, open_price, close_price, min_price, max_price, value}).
 
+-define(OK, 200).
 -define(CREATED, 201).
 -define(BAD_REQUEST, 400).
 -define(NOT_FOUND, 404).
@@ -49,7 +50,7 @@ out(Arg) ->
 	{_, Path} = Request#http_request.path,
 	handle_request(Method, Path, Arg).
 
-
+%% Common request handler
 handle_request(Method, ?URL++Path, Arg) ->
 	handle_request(Method, string:tokens(Path, "/"), Arg);
 
@@ -89,6 +90,7 @@ handle_request('GET', [Name, T1, T2], _Arg) ->
 handle_request('GET', [Name, T1, T2, Scale], _Arg) when ?is_scale(Scale) ->
 	handle_request_name_time([Name, dt(T1), dt(T2), Scale]);
 
+%% Insert specified Name, Time, Price and Value to store
 handle_request('POST', ["add"], Arg) ->
 	try
 		{ok, Name} = yaws_api:postvar(Arg, "name"),
@@ -102,7 +104,7 @@ handle_request('POST', ["add"], Arg) ->
 
 		handle_request_post(N, dt(Time), P, V)
 	catch
-		_ -> handle_response(?BAD_REQUEST)
+		_Exception:_Reason -> handle_response(?BAD_REQUEST)
 	end;
 
 handle_request(_Method, _Request, _Arg) ->
@@ -135,12 +137,12 @@ handle_request_post(Name, Time, Price, Value) when ?is_time(Time) ->
 	ok = gen_server:call(exchange_storage, {add, Name, Time, Price, Value}),
 	handle_response(?CREATED);
 
-handle_request_post(_Name, _Time, _Price, _Value) ->
+handle_request_post(_, _, _, _) ->
 	handle_response(?BAD_REQUEST).
 
 
 handle_response(?CREATED) ->
-	{status, ?CREATED};
+	[{status, ?CREATED}, set_headers(), {content, "text/plain; charset=utf-8", "Successfully added"}];
 
 handle_response(?BAD_REQUEST) ->
 	{status, ?BAD_REQUEST};
@@ -149,5 +151,10 @@ handle_response([]) ->
 	{status, ?NOT_FOUND};
 
 handle_response(Reply) ->
-	[{status, 200}, {header, {"Vary", "Accept"}}, {content, "application/json; charset=utf-8", json(Reply)}].
+	[{status, ?OK},  set_headers(), {content, "application/json; charset=utf-8", json(Reply)}].
+
+set_headers() ->
+	Vary = ["Vary:", "Accept"],
+	Cache = ["Cache-Control:", "no-cache, no-store, must-revalidate, pre-check=0, post-check=0"],
+	{allheaders, [{header, Vary}, {header, Cache}]}.
 
