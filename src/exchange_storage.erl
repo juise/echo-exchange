@@ -5,7 +5,7 @@
 
 -behaviour(gen_server).
 
--export([start_link/0, add/0, add/4]).
+-export([start_link/0]).
 -export([init/1, handle_cast/2, handle_call/3, handle_info/2, code_change/3, terminate/2]).
 
 -record(paper, {name, time, price, value}).
@@ -84,17 +84,9 @@ group(Name, Time, OpenPrice, ClosePrice, MinPrice, MaxPrice, Value, [], Multifor
 	lists:sort([Multifor | Multifors]).
 
 
-add() ->
-	Paper = [#paper{name="ECHO", time=calendar:local_time(), price=10, value=20}],
-	ets:insert(paper, Paper).
-
-add(Name, Time, Price, Value) ->
-	Paper = #paper{name=Name, time=Time, price=Price, value=Value},
-	ets:insert(paper, Paper).
-
 %% Select all
 select_all() ->
-	ets:select(paper, ets:fun2ms(fun(Paper) -> Paper end)).
+	lists:sort(ets:select(paper, ets:fun2ms(fun(Paper) -> Paper end))).
 
 %% Select all and Scale
 select_all(Scale) ->
@@ -103,7 +95,7 @@ select_all(Scale) ->
 
 %% Select all by given Name
 select_by_name(Name) ->
-	ets:select(paper, ets:fun2ms(fun(Paper = #paper{name=N}) when N =:= Name -> Paper end)).
+	lists:sort(ets:select(paper, ets:fun2ms(fun(Paper = #paper{name=N}) when N =:= Name -> Paper end))).
 
 %% Select all by given Name and Scale
 select_by_name(Name, Scale) ->
@@ -112,7 +104,7 @@ select_by_name(Name, Scale) ->
 
 %% Select all by given date time T1,T2 range
 select_by_time(T1, T2) ->
-	ets:select(paper, ets:fun2ms(fun(Paper = #paper{time=T}) when T1 =< T andalso T =< T2 -> Paper end)).
+	lists:sort(ets:select(paper, ets:fun2ms(fun(Paper = #paper{time=T}) when T1 =< T andalso T =< T2 -> Paper end))).
 
 %% Select all by given date time T1,T2 range and Scale
 select_by_time(T1, T2, Scale) ->
@@ -121,7 +113,7 @@ select_by_time(T1, T2, Scale) ->
 
 %% Select all by given Name, date time T1,T2 range
 select_by_name_time(Name, T1, T2) ->
-	ets:select(paper, ets:fun2ms(fun(Paper = #paper{name=N, time=T}) when N =:= Name andalso T1 =< T andalso T =< T2 -> Paper end)).
+	lists:sort(ets:select(paper, ets:fun2ms(fun(Paper = #paper{name=N, time=T}) when N =:= Name andalso T1 =< T andalso T =< T2 -> Paper end))).
 
 %% Select all by given Name, date time T1,T2 range and Scale
 select_by_name_time(Name, T1, T2, Scale) ->
@@ -170,19 +162,7 @@ handle_cast(_Msg, State) ->
 	{noreply, State}.
 
 handle_info(init_storage, State) ->
-	Papers = [
-		#paper{name="YNDX", time=calendar:local_time(), price=10, value=20},
-		#paper{name="GOOG", time={{2012,3,20},{15,0,0}}, price=20, value=30},
-		#paper{name="YNDX", time={{2012,4,20},{15,30,59}}, price=16, value=510},
-		#paper{name="GOOG", time=calendar:local_time(), price=200, value=540},
-		#paper{name="YNDX", time=calendar:local_time(), price=50, value=20},
-		#paper{name="YNDX", time=calendar:local_time(), price=20, value=400},
-		#paper{name="YNDX", time={{2012,4,20},{12,9,59}}, price=40, value=10},
-		#paper{name="GOOG", time=calendar:local_time(), price=60, value=50},
-		#paper{name="GOOG", time={{2012,4,21},{12,9,59}}, price=340, value=500}
-	],
 	ets:new(paper, [bag, {keypos, #paper.name}, named_table]),
-	ets:insert(paper, Papers),
 	{noreply, State}.
 
 terminate(_Reason, _State) ->
