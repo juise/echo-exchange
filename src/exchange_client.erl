@@ -3,14 +3,17 @@
 
 -behaviour(gen_server).
 
--export([start_link/1, select/1, add/0]).
+-export([start_link/1, add/0]).
 -export([init/1, handle_cast/2, handle_call/3, handle_info/2, code_change/3, terminate/2]).
 
--record(paper, {name, time, price, value}).
+-compile(export_all).
 
 -define(URL, "/api/v1/").
 
 -define(NAMES, ["APPL", "MSFT", "ORCL", "YHOO", "ECHO", "AMZN", "YNDX", "GOOG"]).
+-define(SCALES, ["minute", "hour", "day", "week", "month"]).
+-define(ARGS, [{all}, {all, scale()}, {name, name()}, {name, name(), scale()}, {time, datetime(), datetime()}, {time, datetime(), datetime(), scale()},
+		{name, time, name(), datetime(), datetime()}, {name, time, name(), datetime(), datetime(), scale()}]).
 
 
 start_link(Host) ->
@@ -21,12 +24,12 @@ init(Host) ->
 	{ok, Host}.
 
 
-get_name() ->
+name() ->
 	Names = dict:from_list(lists:zip(lists:seq(1, length(?NAMES)), ?NAMES)),
 	Key = random:uniform(length(?NAMES)),
 	dict:fetch(Key, Names).
 
-get_time() ->
+datetime() ->
 	{{Y, _M, _D}, {_H, _Mn, _S}} = calendar:local_time(),
 	M = random:uniform(12),
 	D = random:uniform(31),
@@ -35,17 +38,103 @@ get_time() ->
 	S = random:uniform(60),
 	dh_date:format("Y-m-dTH:i:s", {{Y, M, D}, {H, Mn, S}}).
 
-get_price_or_value() ->
+price_or_value() ->
 	integer_to_list(random:uniform(1000) div random:uniform(10)).
 
-paper({struct, [{_Name, Name}, {_Time, Time}, {_Price, Price}, {_Value, Value}]}) ->
-	#paper{name=Name, time=Time, price=Price, value=Value}.
+scale() ->
+	Scales = dict:from_list(lists:zip(lists:seq(1, length(?SCALES)), ?SCALES)),
+	Key = random:uniform(length(?SCALES)),
+	dict:fetch(Key, Scales).
+
+args() ->
+	Args = dict:from_list(lists:zip(lists:seq(1, length(?ARGS)), ?ARGS)),
+	Key = random:uniform(length(?ARGS)),
+	dict:fetch(Key, Args).
 
 
-select(all) ->
-	{Code, Message, Body} = gen_server:call(?MODULE, {all}),
+out({struct, [{_Name, Name}, {_Time, Time}, {_Price, Price}, {_Value, Value}]}) ->
+	io:format("~s, ~s, ~w, ~w~n", [Name, Time, Price, Value]);
+
+out({struct, [{_Name, Name}, {_Time, Time}, {_OpenPrice, OpenPrice}, {_ClosePrice, ClosePrice}, {_MinPrice, MinPrice}, {_MaxPrice, MaxPrice}, {_Value, Value}]}) ->
+	io:format("~s, ~s, ~w, ~w, ~w, ~w, ~w~n", [Name, Time, OpenPrice, ClosePrice, MinPrice, MaxPrice, Value]).
+
+
+parse({Code, Message, []}) ->
+	io:format("~w, ~s~n", [Code, Message]);
+
+parse({Code, Message, Body}) ->
 	{ok, {array, Records}} = json2:decode_string(Body),
-	[io:format("~p~n", [paper(Record)]) || Record <- Records].
+	[out(Record) || Record <- Records],
+	ok.
+
+select() ->
+%	Count = random:uniform(10),
+%	[select(args()) || _ <- lists:seq(1, Count)],
+%	io:format("Amount of requests ~w~n", [Count]).
+	A = args(),
+	select(A).
+
+
+select(Args) ->
+	{Code, Message, Body} = gen_server:call(?MODULE, Args),
+	parse({Code, Message, Body});
+
+
+%select({all}) ->
+%	{_Code, _Message, Body} = gen_server:call(?MODULE, {all}),
+%	{ok, {array, Records}} = json2:decode_string(Body),
+%	[io:format("~s, ~s, ~w, ~w~n", paper(Record)) || Record <- Records],
+%	ok;
+%
+%select({all, Scale}) ->
+%	{_Code, _Message, Body} = gen_server:call(?MODULE, {all, Scale}),
+%	{ok, {array, Records}} = json2:decode_string(Body),
+%	[io:format("~s, ~s, ~w, ~w, ~w, ~w, ~w~n", multifor(Record)) || Record <- Records],
+%	ok;
+%
+%select({name, Name}) ->
+%	{_Code, _Message, Body} = gen_server:call(?MODULE, {name, Name}),
+%	{ok, {array, Records}} = json2:decode_string(Body),
+%	[io:format("~s, ~s, ~w, ~w~n", paper(Record)) || Record <- Records],
+%	ok;
+%
+%select({name, Name, Scale}) ->
+%	io:format("q~n"),
+%	{_Code, _Message, Body} = gen_server:call(?MODULE, {name, Name, Scale}),
+%	{ok, {array, Records}} = json2:decode_string(Body),
+%	[io:format("~s, ~s, ~w, ~w, ~w, ~w, ~w~n", multifor(Record)) || Record <- Records],
+%	ok;
+%
+%select({time, T1, T2}) ->
+%	io:format("q~n"),
+%	{_Code, _Message, Body} = gen_server:call(?MODULE, {time, T1, T2}),
+%	{ok, {array, Records}} = json2:decode_string(Body),
+%	[io:format("~s, ~s, ~w, ~w~n", paper(Record)) || Record <- Records],
+%	ok;
+%
+%select({time, T1, T2, Scale}) ->
+%	io:format("q~n"),
+%	{_Code, _Message, Body} = gen_server:call(?MODULE, {time, T1, T2, Scale}),
+%	{ok, {array, Records}} = json2:decode_string(Body),
+%	[io:format("~s, ~s, ~w, ~w, ~w, ~w, ~w~n", multifor(Record)) || Record <- Records],
+%	ok;
+%
+%select({name, time, Name, T1, T2}) ->
+%	io:format("q~n"),
+%	{_Code, _Message, Body} = gen_server:call(?MODULE, {name, time, Name, T1, T2}),
+%	{ok, {array, Records}} = json2:decode_string(Body),
+%	[io:format("~s, ~s, ~w, ~w~n", paper(Record)) || Record <- Records],
+%	ok;
+%
+%select({name, time, Name, T1, T2, Scale}) ->
+%	io:format("q~n"),
+%	{_Code, _Message, Body} = gen_server:call(?MODULE, {name, time, Name, T1, T2, Scale}),
+%	{ok, {array, Records}} = json2:decode_string(Body),
+%	[io:format("~s, ~s, ~w, ~w, ~w, ~w, ~w~n", multifor(Record)) || Record <- Records],
+%	ok;
+
+select(_) ->
+	err.
 
 add() ->
 	Count = random:uniform(10000),
@@ -54,8 +143,8 @@ add() ->
 
 add_() ->
 	timer:sleep(1),
-	{Code, Message, Body} = gen_server:call(?MODULE, {add, get_name(), get_time(), get_price_or_value(), get_price_or_value()}),
-	io:format("~w, ~s ~s~n", [Code, Message, Body]).
+	{Code, Message, Body} = gen_server:call(?MODULE, {add, name(), datetime(), price_or_value(), price_or_value()}),
+	io:format("~w, ~s - ~s~n", [Code, Message, Body]).
 
 
 handle_call({all}, _From, State) ->

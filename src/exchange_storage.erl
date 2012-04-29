@@ -45,6 +45,9 @@ month(#paper{name=N, time=T, price=P, value=V}) ->
 	{{Y, M, _}, _} = T,
 	#paper{name=N, time={{Y, M, 1}, {0, 0, 0}}, price=P, value=V}.
 
+scale([], _) ->
+	[];
+
 %% Scale records by minute
 scale(Papers, minute) ->
 	scale(lists:map(fun minute/1, Papers));
@@ -64,6 +67,10 @@ scale(Papers, week) ->
 %% Scale records by month
 scale(Papers, month) ->
 	scale(lists:map(fun month/1, Papers)).
+
+
+
+
 
 %% Scale records
 scale([#paper{name=N, time=T, price=P, value=V} | Papers]) ->
