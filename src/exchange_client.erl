@@ -17,16 +17,16 @@
 select() ->
 	select("127.0.0.1:8888").
 
-select(Host) ->
-	gen_server:start_link({local, ?MODULE}, ?MODULE, "http://"++Host, []),
+select([Host]) ->
+	gen_server:start_link({local, ?MODULE}, ?MODULE, "http://"++atom_to_list(Host), []),
 	select_(args()),
 	init:stop().
 
 add() ->
 	add("127.0.0.1:8888").
 
-add(Host) ->
-	gen_server:start_link({local, ?MODULE}, ?MODULE, "http://"++Host, []),
+add([Host]) ->
+	gen_server:start_link({local, ?MODULE}, ?MODULE, "http://"++atom_to_list(Host), []),
 	Count = crypto:rand_uniform(1,100),
 	[add_() || _ <- lists:seq(1, Count)],
 	init:stop().
@@ -79,10 +79,10 @@ parse({_Code, _Message, Body}) ->
 
 %% Print selected results
 print({struct, [{_Name, Name}, {_Time, Time}, {_Price, Price}, {_Value, Value}]}) ->
-	io:format("~s, ~s, ~w, ~w~n", [Name, Time, Price, Value]);
+	io:format("~s, ~s, ~4w, ~4w~n", [Name, Time, Price, Value]);
 
 print({struct, [{_Name, Name}, {_Time, Time}, {_OpenPrice, OpenPrice}, {_ClosePrice, ClosePrice}, {_MinPrice, MinPrice}, {_MaxPrice, MaxPrice}, {_Value, Value}]}) ->
-	io:format("~s, ~s, ~w, ~w, ~w, ~w, ~w~n", [Name, Time, OpenPrice, ClosePrice, MinPrice, MaxPrice, Value]).
+	io:format("~s, ~s, ~4w, ~4w, ~4w, ~4w, ~4w~n", [Name, Time, OpenPrice, ClosePrice, MinPrice, MaxPrice, Value]).
 
 
 select_(Args) ->
