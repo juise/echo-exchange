@@ -57,7 +57,7 @@ http://host:port/api/v1/add - Добавление данных, поля уча
 
 ```
 http://juise.ru:8888/api/v1/all/
-http://juise.ru:8888/api/v1/ECHO/minute
+http://juise.ru:8888/api/v1/all/minute
 
 http://juise.ru:8888/api/v1/ECHO/
 http://juise.ru:8888/api/v1/ECHO/hour
