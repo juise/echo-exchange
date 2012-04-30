@@ -49,5 +49,10 @@ http://host:port/api/v1/Time1/Time2/Scale - Выборка всех данных
 http://host:port/api/v1/Name/Time1/Time2 - Выборка всех данных с сервера по названию ценной бумаги за заданный временной диапазон
 http://host:port/api/v1/Name/Time1/Time2/Scale - Выборка всех данных с сервера по названию ценной бумаги за заданный временной диапазон с заданным масштабом
 
+http://host:port/api/v1/add - Добавление данных, поля учавствующие в POST-запросе - name, time, price, value
+
+например:
+curl http://host:port/api/v1/add -d "name=ECHO" -d "time=2012-07-04T03:25:53" -d "price=150" -d "value=200"
+
 ```
 
