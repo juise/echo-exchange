@@ -3,143 +3,92 @@
 
 -behaviour(gen_server).
 
--export([start_link/1, add/0]).
+-export([add/0, add/1, select/0, select/1]).
 -export([init/1, handle_cast/2, handle_call/3, handle_info/2, code_change/3, terminate/2]).
-
--compile(export_all).
 
 -define(URL, "/api/v1/").
 
 -define(NAMES, ["APPL", "MSFT", "ORCL", "YHOO", "ECHO", "AMZN", "YNDX", "GOOG"]).
 -define(SCALES, ["minute", "hour", "day", "week", "month"]).
--define(ARGS, [{all}, {all, scale()}, {name, name()}, {name, name(), scale()}, {time, datetime(), datetime()}, {time, datetime(), datetime(), scale()},
-		{name, time, name(), datetime(), datetime()}, {name, time, name(), datetime(), datetime(), scale()}]).
+-define(ARGS, [{all}, {all, scale()}, {name, name()}, {name, name(), scale()}, {time, datetime(), datetime()}, {time, datetime(), datetime(), scale()}, {name, time, name(), datetime(), datetime()}, {name, time, name(), datetime(), datetime(), scale()}]).
 
 
-start_link(Host) ->
-	gen_server:start_link({local, ?MODULE}, ?MODULE, Host, []).
+
+select() ->
+	select("127.0.0.1:8888").
+
+select(Host) ->
+	gen_server:start_link({local, ?MODULE}, ?MODULE, "http://"++Host, []),
+	select_(args()),
+	init:stop().
+
+add() ->
+	add("127.0.0.1:8888").
+
+add(Host) ->
+	gen_server:start_link({local, ?MODULE}, ?MODULE, "http://"++Host, []),
+	Count = crypto:rand_uniform(1,100),
+	[add_() || _ <- lists:seq(1, Count)],
+	init:stop().
 
 init(Host) ->
 	self() ! init_inets,
 	{ok, Host}.
 
 
+%% Select name from names list
 name() ->
 	Names = dict:from_list(lists:zip(lists:seq(1, length(?NAMES)), ?NAMES)),
-	Key = random:uniform(length(?NAMES)),
+	Key = crypto:rand_uniform(1, length(?NAMES)),
 	dict:fetch(Key, Names).
 
+%% Gererate date time
 datetime() ->
 	{{Y, _M, _D}, {_H, _Mn, _S}} = calendar:local_time(),
-	M = random:uniform(12),
-	D = random:uniform(31),
-	H = random:uniform(24),
-	Mn = random:uniform(60),
-	S = random:uniform(60),
+	M = crypto:rand_uniform(1,12),
+	D = crypto:rand_uniform(1,31),
+	H = crypto:rand_uniform(1,24),
+	Mn = crypto:rand_uniform(1,60),
+	S = crypto:rand_uniform(1,60),
 	dh_date:format("Y-m-dTH:i:s", {{Y, M, D}, {H, Mn, S}}).
 
+%% Generate price or value
 price_or_value() ->
-	integer_to_list(random:uniform(1000) div random:uniform(10)).
+	integer_to_list(crypto:rand_uniform(1,1000) div crypto:rand_uniform(1,10)).
 
+%% Select scale from scales list
 scale() ->
 	Scales = dict:from_list(lists:zip(lists:seq(1, length(?SCALES)), ?SCALES)),
-	Key = random:uniform(length(?SCALES)),
+	Key = crypto:rand_uniform(1,length(?SCALES)),
 	dict:fetch(Key, Scales).
 
+%% Select arguments (criteria) from aeguments list
 args() ->
 	Args = dict:from_list(lists:zip(lists:seq(1, length(?ARGS)), ?ARGS)),
-	Key = random:uniform(length(?ARGS)),
+	Key = crypto:rand_uniform(1, (length(?ARGS))),
 	dict:fetch(Key, Args).
 
 
-out({struct, [{_Name, Name}, {_Time, Time}, {_Price, Price}, {_Value, Value}]}) ->
-	io:format("~s, ~s, ~w, ~w~n", [Name, Time, Price, Value]);
-
-out({struct, [{_Name, Name}, {_Time, Time}, {_OpenPrice, OpenPrice}, {_ClosePrice, ClosePrice}, {_MinPrice, MinPrice}, {_MaxPrice, MaxPrice}, {_Value, Value}]}) ->
-	io:format("~s, ~s, ~w, ~w, ~w, ~w, ~w~n", [Name, Time, OpenPrice, ClosePrice, MinPrice, MaxPrice, Value]).
-
-
+%% Parse and print selected results
 parse({Code, Message, []}) ->
 	io:format("~w, ~s~n", [Code, Message]);
 
-parse({Code, Message, Body}) ->
+parse({_Code, _Message, Body}) ->
 	{ok, {array, Records}} = json2:decode_string(Body),
-	[out(Record) || Record <- Records],
-	ok.
+	[print(Record) || Record <- Records].
 
-select() ->
-%	Count = random:uniform(10),
-%	[select(args()) || _ <- lists:seq(1, Count)],
-%	io:format("Amount of requests ~w~n", [Count]).
-	A = args(),
-	select(A).
+%% Print selected results
+print({struct, [{_Name, Name}, {_Time, Time}, {_Price, Price}, {_Value, Value}]}) ->
+	io:format("~s, ~s, ~w, ~w~n", [Name, Time, Price, Value]);
+
+print({struct, [{_Name, Name}, {_Time, Time}, {_OpenPrice, OpenPrice}, {_ClosePrice, ClosePrice}, {_MinPrice, MinPrice}, {_MaxPrice, MaxPrice}, {_Value, Value}]}) ->
+	io:format("~s, ~s, ~w, ~w, ~w, ~w, ~w~n", [Name, Time, OpenPrice, ClosePrice, MinPrice, MaxPrice, Value]).
 
 
-select(Args) ->
+select_(Args) ->
 	{Code, Message, Body} = gen_server:call(?MODULE, Args),
-	parse({Code, Message, Body});
-
-
-%select({all}) ->
-%	{_Code, _Message, Body} = gen_server:call(?MODULE, {all}),
-%	{ok, {array, Records}} = json2:decode_string(Body),
-%	[io:format("~s, ~s, ~w, ~w~n", paper(Record)) || Record <- Records],
-%	ok;
-%
-%select({all, Scale}) ->
-%	{_Code, _Message, Body} = gen_server:call(?MODULE, {all, Scale}),
-%	{ok, {array, Records}} = json2:decode_string(Body),
-%	[io:format("~s, ~s, ~w, ~w, ~w, ~w, ~w~n", multifor(Record)) || Record <- Records],
-%	ok;
-%
-%select({name, Name}) ->
-%	{_Code, _Message, Body} = gen_server:call(?MODULE, {name, Name}),
-%	{ok, {array, Records}} = json2:decode_string(Body),
-%	[io:format("~s, ~s, ~w, ~w~n", paper(Record)) || Record <- Records],
-%	ok;
-%
-%select({name, Name, Scale}) ->
-%	io:format("q~n"),
-%	{_Code, _Message, Body} = gen_server:call(?MODULE, {name, Name, Scale}),
-%	{ok, {array, Records}} = json2:decode_string(Body),
-%	[io:format("~s, ~s, ~w, ~w, ~w, ~w, ~w~n", multifor(Record)) || Record <- Records],
-%	ok;
-%
-%select({time, T1, T2}) ->
-%	io:format("q~n"),
-%	{_Code, _Message, Body} = gen_server:call(?MODULE, {time, T1, T2}),
-%	{ok, {array, Records}} = json2:decode_string(Body),
-%	[io:format("~s, ~s, ~w, ~w~n", paper(Record)) || Record <- Records],
-%	ok;
-%
-%select({time, T1, T2, Scale}) ->
-%	io:format("q~n"),
-%	{_Code, _Message, Body} = gen_server:call(?MODULE, {time, T1, T2, Scale}),
-%	{ok, {array, Records}} = json2:decode_string(Body),
-%	[io:format("~s, ~s, ~w, ~w, ~w, ~w, ~w~n", multifor(Record)) || Record <- Records],
-%	ok;
-%
-%select({name, time, Name, T1, T2}) ->
-%	io:format("q~n"),
-%	{_Code, _Message, Body} = gen_server:call(?MODULE, {name, time, Name, T1, T2}),
-%	{ok, {array, Records}} = json2:decode_string(Body),
-%	[io:format("~s, ~s, ~w, ~w~n", paper(Record)) || Record <- Records],
-%	ok;
-%
-%select({name, time, Name, T1, T2, Scale}) ->
-%	io:format("q~n"),
-%	{_Code, _Message, Body} = gen_server:call(?MODULE, {name, time, Name, T1, T2, Scale}),
-%	{ok, {array, Records}} = json2:decode_string(Body),
-%	[io:format("~s, ~s, ~w, ~w, ~w, ~w, ~w~n", multifor(Record)) || Record <- Records],
-%	ok;
-
-select(_) ->
-	err.
-
-add() ->
-	Count = random:uniform(10000),
-	[add_() || _ <- lists:seq(1, Count)],
-	io:format("Amount of requests ~w~n", [Count]).
+	parse({Code, Message, Body}),
+	io:format("Select criteria: ~p~n", [Args]).
 
 add_() ->
 	timer:sleep(1),
@@ -186,7 +135,7 @@ handle_call({add, Name, Time, Price, Value}, _From, State) ->
 	{reply, {Code, Message, Body}, State};
 
 handle_call(_Msg, _From, State) ->
-	{reply, error, State}.
+	{reply, {400, "Bad request", []}, State}.
 
 
 handle_cast(_Msg, State) ->
