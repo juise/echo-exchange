@@ -51,8 +51,22 @@ http://host:port/api/v1/Name/Time1/Time2/Scale - Выборка всех дан�
 
 http://host:port/api/v1/add - Добавление данных, поля учавствующие в POST-запросе - name, time, price, value
 
-например:
-curl http://host:port/api/v1/add -d "name=ECHO" -d "time=2012-07-04T03:25:53" -d "price=150" -d "value=200"
-
 ```
 
+Например:
+
+```
+http://juise.ru:8888/api/v1/all/
+http://juise.ru:8888/api/v1/ECHO/minute
+
+http://juise.ru:8888/api/v1/ECHO/
+http://juise.ru:8888/api/v1/ECHO/hour
+
+http://juise.ru:8888/api/v1/2012-01-25T08:00:00/2012-11-25T14:20:00
+http://juise.ru:8888/api/v1/2012-01-25T08:00:00/2012-11-25T14:20:00/day
+
+http://juise.ru:8888/api/v1/YNDX/2012-01-25T08:00:00/2012-11-25T14:20:00/
+http://juise.ru:8888/api/v1/YNDX/2012-01-25T08:00:00/2012-11-25T14:20:00/month
+
+curl http://juise.ru:8888/api/v1/add -d "name=ECHO" -d "time=2012-07-04T03:25:53" -d "price=150" -d "value=200"
+```
